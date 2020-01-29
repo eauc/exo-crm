@@ -1,25 +1,18 @@
 const { updateUserInCRM } = require('../src/pipedrive.js');
-const { MongoClient } = require('mongodb');
+const dbModule = require('../src/db.js');
 const nock = require('nock');
 
+jest.mock('../src/db.js');
+
 describe('pipedrive', () => {
-  let client;
-  let BankAccounts;
-  let Users;
-
-  beforeEach(async () => {
-    client = await MongoClient.connect('mongodb://localhost:27017', {
-      useUnifiedTopology: true,
-    });
-    const db = client.db('test');
-    BankAccounts = db.collection('bank_accounts');
-    Users = db.collection('users');
-  });
-
-  afterEach(async () => {
-      await Users.deleteMany();
-      await BankAccounts.deleteMany();
-      await client.close();
+  let mockDB;
+  beforeEach(() => {
+    mockDB = {
+      getUserById: jest.fn(),
+      countUserBankAccounts: jest.fn(),
+      close: jest.fn(),
+    };
+    dbModule.getDB.mockResolvedValue(mockDB);
   });
 
   afterEach(() => {
@@ -35,7 +28,7 @@ describe('pipedrive', () => {
   });
 
   it('should do nothing when person with SIREN is not found', async () => {
-    Users.insertOne({
+    mockDB.getUserById.mockResolvedValue({
       _id: '#fakeUserId',
       emails: [{
         address: 'john.doe@example.com',
@@ -62,10 +55,15 @@ describe('pipedrive', () => {
     });
 
     scope.done();
+    expect(mockDB.getUserById.mock.calls.length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
+      userId: '#fakeUserId',
+    });
   });
 
   it('should update person with SIREN and not update deal when user is already subscribed', async () => {
-    Users.insertOne({
+    mockDB.getUserById.mockResolvedValue({
       _id: '#fakeUserId',
       emails: [{
         address: 'john.doe@example.com',
@@ -105,10 +103,15 @@ describe('pipedrive', () => {
     });
 
     scope.done();
+    expect(mockDB.getUserById.mock.calls.length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
+      userId: '#fakeUserId',
+    });
   });
 
   it('should update person with SIREN then stop when open deal is not found', async () => {
-    Users.insertOne({
+    mockDB.getUserById.mockResolvedValue({
       _id: '#fakeUserId',
       emails: [{
         address: 'john.doe@example.com',
@@ -155,10 +158,15 @@ describe('pipedrive', () => {
     });
 
     scope.done();
+    expect(mockDB.getUserById.mock.calls.length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
+      userId: '#fakeUserId',
+    });
   });
 
   it('should update person and deal when user is an opportunity', async () => {
-    Users.insertOne({
+    mockDB.getUserById.mockResolvedValue({
       _id: '#fakeUserId',
       emails: [{
         address: 'john.doe@example.com',
@@ -169,6 +177,7 @@ describe('pipedrive', () => {
       },
       stripe: {},
     });
+    mockDB.countUserBankAccounts.mockResolvedValue(0);
     const scope = nock('http://api.crm.com/v1')
       .get('/persons')
       .query({
@@ -218,10 +227,20 @@ describe('pipedrive', () => {
     });
 
     scope.done();
+    expect(mockDB.getUserById.mock.calls.length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
+      userId: '#fakeUserId',
+    });
+    expect(mockDB.countUserBankAccounts.mock.calls.length).toBe(1);
+    expect(mockDB.countUserBankAccounts.mock.calls[0].length).toBe(1);
+    expect(mockDB.countUserBankAccounts.mock.calls[0][0]).toEqual({
+      userId: '#fakeUserId',
+    });
   });
 
   it('should update person and deal when user is in ongoing trial', async () => {
-    Users.insertOne({
+    mockDB.getUserById.mockResolvedValue({
       _id: '#fakeUserId',
       emails: [{
         address: 'john.doe@example.com',
@@ -232,10 +251,7 @@ describe('pipedrive', () => {
       },
       stripe: {},
     });
-    BankAccounts.insertOne({
-      _id: '#fakeBankAccountId',
-      id_user: '#fakeUserId',
-    });
+    mockDB.countUserBankAccounts.mockResolvedValue(2);
     const scope = nock('http://api.crm.com/v1')
       .get('/persons')
       .query({
@@ -285,5 +301,15 @@ describe('pipedrive', () => {
     });
 
     scope.done();
+    expect(mockDB.getUserById.mock.calls.length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
+      userId: '#fakeUserId',
+    });
+    expect(mockDB.countUserBankAccounts.mock.calls.length).toBe(1);
+    expect(mockDB.countUserBankAccounts.mock.calls[0].length).toBe(1);
+    expect(mockDB.countUserBankAccounts.mock.calls[0][0]).toEqual({
+      userId: '#fakeUserId',
+    });
   });
 });
