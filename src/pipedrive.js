@@ -66,18 +66,18 @@ async function updateUserInCRM({ userId, siren }) {
       method: 'PUT',
       url: `http://api.crm.com/v1/persons/${personId}`,
       data: {
-        email: user.emails[0].address,
-        phone: user.profile.phone,
+        email: user.email,
+        phone: user.phone,
         // SIREN
         '2d89a2a3c44faab761afe9043da4d40da3538adb': siren,
         // GeorgesUserID
         '8254d58243c8cf10f258ca054b7bc08582407491': userId,
         // JobLabel
-        '1f2fa3f0c10305458b57ab0cdfeda1915802cfe2': user.profile.job,
+        '1f2fa3f0c10305458b57ab0cdfeda1915802cfe2': user.job,
       },
     });
 
-    if (user.stripe.plan) {
+    if (user.isSubscribed) {
       console.log('User already subscribed');
       return;
     }
@@ -103,8 +103,7 @@ async function updateUserInCRM({ userId, siren }) {
     const {
       pipeline,
     } = _.get(stageIDs, deal.stage_id);
-    const bankAccountsCounts = await db.countUserBankAccounts({ userId });
-    const stage = bankAccountsCounts <= 0 ? 'opportunities' : 'ongoing_trials';
+    const stage = user.hasSynchronizedBankAccount ? 'ongoing_trials' : 'opportunities';
 
     await axios({
       method: 'PUT',

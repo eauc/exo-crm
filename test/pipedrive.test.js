@@ -30,14 +30,11 @@ describe('pipedrive', () => {
   it('should do nothing when person with SIREN is not found', async () => {
     mockDB.getUserById.mockResolvedValue({
       _id: '#fakeUserId',
-      emails: [{
-        address: 'john.doe@example.com',
-      }],
-      profile: {
-        phone: '0102030405',
-        job: 'nurse',
-      },
-      stripe: {},
+      email: 'john.doe@example.com',
+      phone: '0102030405',
+      job: 'nurse',
+      isSubscribed: false,
+      hasSynchronizedBankAccounts: false,
     });
     const scope = nock('http://api.crm.com/v1')
       .get('/persons')
@@ -65,14 +62,11 @@ describe('pipedrive', () => {
   it('should update person with SIREN and not update deal when user is already subscribed', async () => {
     mockDB.getUserById.mockResolvedValue({
       _id: '#fakeUserId',
-      emails: [{
-        address: 'john.doe@example.com',
-      }],
-      profile: {
-        phone: '0102030405',
-        job: 'nurse',
-      },
-      stripe: { plan: 'normal24' },
+      email: 'john.doe@example.com',
+      phone: '0102030405',
+      job: 'nurse',
+      isSubscribed: true,
+      hasSynchronizedBankAccounts: false,
     });
     const scope = nock('http://api.crm.com/v1')
       .get('/persons')
@@ -113,14 +107,11 @@ describe('pipedrive', () => {
   it('should update person with SIREN then stop when open deal is not found', async () => {
     mockDB.getUserById.mockResolvedValue({
       _id: '#fakeUserId',
-      emails: [{
-        address: 'john.doe@example.com',
-      }],
-      profile: {
-        phone: '0102030405',
-        job: 'nurse',
-      },
-      stripe: {},
+      email: 'john.doe@example.com',
+      phone: '0102030405',
+      job: 'nurse',
+      isSubscribed: false,
+      hasSynchronizedBankAccounts: false,
     });
     const scope = nock('http://api.crm.com/v1')
       .get('/persons')
@@ -168,14 +159,11 @@ describe('pipedrive', () => {
   it('should update person and deal when user is an opportunity', async () => {
     mockDB.getUserById.mockResolvedValue({
       _id: '#fakeUserId',
-      emails: [{
-        address: 'john.doe@example.com',
-      }],
-      profile: {
-        phone: '0102030405',
-        job: 'nurse',
-      },
-      stripe: {},
+      email: 'john.doe@example.com',
+      phone: '0102030405',
+      job: 'nurse',
+      isSubscribed: false,
+      hasSynchronizedBankAccounts: false,
     });
     mockDB.countUserBankAccounts.mockResolvedValue(0);
     const scope = nock('http://api.crm.com/v1')
@@ -232,26 +220,17 @@ describe('pipedrive', () => {
     expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
       userId: '#fakeUserId',
     });
-    expect(mockDB.countUserBankAccounts.mock.calls.length).toBe(1);
-    expect(mockDB.countUserBankAccounts.mock.calls[0].length).toBe(1);
-    expect(mockDB.countUserBankAccounts.mock.calls[0][0]).toEqual({
-      userId: '#fakeUserId',
-    });
   });
 
   it('should update person and deal when user is in ongoing trial', async () => {
     mockDB.getUserById.mockResolvedValue({
       _id: '#fakeUserId',
-      emails: [{
-        address: 'john.doe@example.com',
-      }],
-      profile: {
-        phone: '0102030405',
-        job: 'nurse',
-      },
-      stripe: {},
+      email: 'john.doe@example.com',
+      phone: '0102030405',
+      job: 'nurse',
+      isSubscribed: false,
+      hasSynchronizedBankAccount: true,
     });
-    mockDB.countUserBankAccounts.mockResolvedValue(2);
     const scope = nock('http://api.crm.com/v1')
       .get('/persons')
       .query({
@@ -304,11 +283,6 @@ describe('pipedrive', () => {
     expect(mockDB.getUserById.mock.calls.length).toBe(1);
     expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
     expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
-      userId: '#fakeUserId',
-    });
-    expect(mockDB.countUserBankAccounts.mock.calls.length).toBe(1);
-    expect(mockDB.countUserBankAccounts.mock.calls[0].length).toBe(1);
-    expect(mockDB.countUserBankAccounts.mock.calls[0][0]).toEqual({
       userId: '#fakeUserId',
     });
   });

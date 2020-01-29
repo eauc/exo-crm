@@ -12,8 +12,20 @@ async function getDB({ url, dbName }) {
   const Users = db.collection('users');
   const BankAccounts = db.collection('bank_accounts');
   return {
-    getUserById({ userId }) {
-      return Users.findOne({ _id: userId });
+    async getUserById({ userId }) {
+      const dbUser = await Users.findOne({ _id: userId });
+      if (!dbUser) {
+        return undefined;
+      }
+      const bankAccountsCount = await this.countUserBankAccounts({ userId });
+      return {
+        _id: dbUser._id,
+        email: dbUser.emails[0].address,
+        phone: dbUser.profile.phone,
+        job: dbUser.profile.job,
+        isSubscribed: Boolean(dbUser.stripe.plan),
+        hasSynchronizedBankAccount: bankAccountsCount > 0,
+      };
     },
     countUserBankAccounts({ userId }) {
       return BankAccounts.countDocuments({ id_user: userId });

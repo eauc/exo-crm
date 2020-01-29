@@ -22,7 +22,7 @@ describe('db', () => {
   });
 
   describe('getUserById', () => {
-    it('should retrieve user from "users" collection', async () => {
+    it('should retrieve unsubscribed user with no bank account from "users" collection', async () => {
       Users.insertOne({
         _id: '#fakeUserId',
         emails: [{
@@ -45,6 +45,17 @@ describe('db', () => {
 
       expect(user).toEqual({
         _id: '#fakeUserId',
+        email: 'john.doe@example.com',
+        phone: '0102030405',
+        job: 'nurse',
+        isSubscribed: false,
+        hasSynchronizedBankAccount: false,
+      });
+    });
+
+    it('should retrieve unsubscribed user with some bank account from "users" collection', async () => {
+      Users.insertOne({
+        _id: '#fakeUserId',
         emails: [{
           address: 'john.doe@example.com',
         }],
@@ -53,6 +64,68 @@ describe('db', () => {
           job: 'nurse',
         },
         stripe: {},
+      });
+      BankAccounts.insertMany([{
+        _id: '#fakeBankAccountId1',
+        id_user: '#fakeUserId',
+      }, {
+        _id: '#fakeBankAccountId2',
+        id_user: '#fakeUserId',
+      }]);
+      const db = await getDB({
+        url: 'mongodb://localhost:27017',
+        dbName: 'test',
+      });
+      const user = await db.getUserById({
+        userId: '#fakeUserId',
+      });
+      await db.close();
+
+      expect(user).toEqual({
+        _id: '#fakeUserId',
+        email: 'john.doe@example.com',
+        phone: '0102030405',
+        job: 'nurse',
+        isSubscribed: false,
+        hasSynchronizedBankAccount: true,
+      });
+    });
+
+    it('should retrieve subscribed user with some bank account from "users" collection', async () => {
+      Users.insertOne({
+        _id: '#fakeUserId',
+        emails: [{
+          address: 'john.doe@example.com',
+        }],
+        profile: {
+          phone: '0102030405',
+          job: 'nurse',
+        },
+        stripe: { plan: 'normal24' },
+      });
+      BankAccounts.insertMany([{
+        _id: '#fakeBankAccountId1',
+        id_user: '#fakeUserId',
+      }, {
+        _id: '#fakeBankAccountId2',
+        id_user: '#fakeUserId',
+      }]);
+      const db = await getDB({
+        url: 'mongodb://localhost:27017',
+        dbName: 'test',
+      });
+      const user = await db.getUserById({
+        userId: '#fakeUserId',
+      });
+      await db.close();
+
+      expect(user).toEqual({
+        _id: '#fakeUserId',
+        email: 'john.doe@example.com',
+        phone: '0102030405',
+        job: 'nurse',
+        isSubscribed: true,
+        hasSynchronizedBankAccount: true,
       });
     });
 
@@ -66,7 +139,7 @@ describe('db', () => {
       });
       await db.close();
 
-      expect(user).toBe(null);
+      expect(user).toBe(undefined);
     });
   });
 
