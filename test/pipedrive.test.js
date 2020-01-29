@@ -1,29 +1,29 @@
 const { updateUserInCRM } = require('../src/pipedrive.js');
-const dbModule = require('../src/db.js');
-const api = require('../src/api.js');
-
-jest.mock('../src/db.js');
-jest.mock('../src/api.js');
 
 describe('pipedrive', () => {
   let mockDB;
+  let mockAPI;
+
   beforeEach(() => {
     mockDB = {
       getUserById: jest.fn(),
       countUserBankAccounts: jest.fn(),
       close: jest.fn(),
     };
-    dbModule.getDB.mockResolvedValue(mockDB);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
+    mockAPI = {
+      getPersonIdBySiren: jest.fn(),
+      updatePerson: jest.fn(),
+      getOpenDealIdForPerson: jest.fn(),
+      updateDealStage: jest.fn(),
+    };
   });
 
   it('should do nothing when user is not found', async () => {
     await updateUserInCRM({
       userId: '#fakeUserId',
       siren: '123456789',
+      api: mockAPI,
+      db: mockDB,
     });
   });
 
@@ -36,11 +36,13 @@ describe('pipedrive', () => {
       isSubscribed: false,
       hasSynchronizedBankAccounts: false,
     });
-    api.getPersonIdBySiren.mockResolvedValue(undefined);
+    mockAPI.getPersonIdBySiren.mockResolvedValue(undefined);
 
     await updateUserInCRM({
       userId: '#fakeUserId',
       siren: '123456789',
+      api: mockAPI,
+      db: mockDB,
     });
 
     expect(mockDB.getUserById.mock.calls.length).toBe(1);
@@ -48,9 +50,9 @@ describe('pipedrive', () => {
     expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
       userId: '#fakeUserId',
     });
-    expect(api.getPersonIdBySiren.mock.calls.length).toBe(1);
-    expect(api.getPersonIdBySiren.mock.calls[0].length).toBe(1);
-    expect(api.getPersonIdBySiren.mock.calls[0][0]).toEqual({
+    expect(mockAPI.getPersonIdBySiren.mock.calls.length).toBe(1);
+    expect(mockAPI.getPersonIdBySiren.mock.calls[0].length).toBe(1);
+    expect(mockAPI.getPersonIdBySiren.mock.calls[0][0]).toEqual({
       siren: '123456789',
     });
   });
@@ -64,11 +66,13 @@ describe('pipedrive', () => {
       isSubscribed: true,
       hasSynchronizedBankAccounts: false,
     });
-    api.getPersonIdBySiren.mockResolvedValue('fakePersonId');
+    mockAPI.getPersonIdBySiren.mockResolvedValue('fakePersonId');
 
     await updateUserInCRM({
       userId: '#fakeUserId',
       siren: '123456789',
+      api: mockAPI,
+      db: mockDB,
     });
 
     expect(mockDB.getUserById.mock.calls.length).toBe(1);
@@ -76,14 +80,14 @@ describe('pipedrive', () => {
     expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
       userId: '#fakeUserId',
     });
-    expect(api.getPersonIdBySiren.mock.calls.length).toBe(1);
-    expect(api.getPersonIdBySiren.mock.calls[0].length).toBe(1);
-    expect(api.getPersonIdBySiren.mock.calls[0][0]).toEqual({
+    expect(mockAPI.getPersonIdBySiren.mock.calls.length).toBe(1);
+    expect(mockAPI.getPersonIdBySiren.mock.calls[0].length).toBe(1);
+    expect(mockAPI.getPersonIdBySiren.mock.calls[0][0]).toEqual({
       siren: '123456789',
     });
-    expect(api.updatePerson.mock.calls.length).toBe(1);
-    expect(api.updatePerson.mock.calls[0].length).toBe(1);
-    expect(api.updatePerson.mock.calls[0][0]).toEqual({
+    expect(mockAPI.updatePerson.mock.calls.length).toBe(1);
+    expect(mockAPI.updatePerson.mock.calls[0].length).toBe(1);
+    expect(mockAPI.updatePerson.mock.calls[0][0]).toEqual({
       personId: 'fakePersonId',
       data: {
         email: 'john.doe@example.com',
@@ -104,12 +108,14 @@ describe('pipedrive', () => {
       isSubscribed: false,
       hasSynchronizedBankAccounts: false,
     });
-    api.getPersonIdBySiren.mockResolvedValue('fakePersonId');
-    api.getOpenDealIdForPerson.mockResolvedValue(undefined);
+    mockAPI.getPersonIdBySiren.mockResolvedValue('fakePersonId');
+    mockAPI.getOpenDealIdForPerson.mockResolvedValue(undefined);
 
     await updateUserInCRM({
       userId: '#fakeUserId',
       siren: '123456789',
+      api: mockAPI,
+      db: mockDB,
     });
 
     expect(mockDB.getUserById.mock.calls.length).toBe(1);
@@ -117,9 +123,9 @@ describe('pipedrive', () => {
     expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
       userId: '#fakeUserId',
     });
-    expect(api.getOpenDealIdForPerson.mock.calls.length).toBe(1);
-    expect(api.getOpenDealIdForPerson.mock.calls[0].length).toBe(1);
-    expect(api.getOpenDealIdForPerson.mock.calls[0][0]).toEqual({
+    expect(mockAPI.getOpenDealIdForPerson.mock.calls.length).toBe(1);
+    expect(mockAPI.getOpenDealIdForPerson.mock.calls[0].length).toBe(1);
+    expect(mockAPI.getOpenDealIdForPerson.mock.calls[0][0]).toEqual({
       personId: 'fakePersonId',
     });
   });
@@ -134,12 +140,14 @@ describe('pipedrive', () => {
       hasSynchronizedBankAccounts: false,
     });
     mockDB.countUserBankAccounts.mockResolvedValue(0);
-    api.getPersonIdBySiren.mockResolvedValue('fakePersonId');
-    api.getOpenDealIdForPerson.mockResolvedValue('fakeDealId');
+    mockAPI.getPersonIdBySiren.mockResolvedValue('fakePersonId');
+    mockAPI.getOpenDealIdForPerson.mockResolvedValue('fakeDealId');
 
     await updateUserInCRM({
       userId: '#fakeUserId',
       siren: '123456789',
+      api: mockAPI,
+      db: mockDB,
     });
 
     expect(mockDB.getUserById.mock.calls.length).toBe(1);
@@ -147,9 +155,9 @@ describe('pipedrive', () => {
     expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
       userId: '#fakeUserId',
     });
-    expect(api.updatePerson.mock.calls.length).toBe(1);
-    expect(api.updatePerson.mock.calls[0].length).toBe(1);
-    expect(api.updatePerson.mock.calls[0][0]).toEqual({
+    expect(mockAPI.updatePerson.mock.calls.length).toBe(1);
+    expect(mockAPI.updatePerson.mock.calls[0].length).toBe(1);
+    expect(mockAPI.updatePerson.mock.calls[0][0]).toEqual({
       personId: 'fakePersonId',
       data: {
         email: 'john.doe@example.com',
@@ -159,9 +167,9 @@ describe('pipedrive', () => {
         jobLabel: 'nurse',
       },
     });
-    expect(api.updateDealStage.mock.calls.length).toBe(1);
-    expect(api.updateDealStage.mock.calls[0].length).toBe(1);
-    expect(api.updateDealStage.mock.calls[0][0]).toEqual({
+    expect(mockAPI.updateDealStage.mock.calls.length).toBe(1);
+    expect(mockAPI.updateDealStage.mock.calls[0].length).toBe(1);
+    expect(mockAPI.updateDealStage.mock.calls[0][0]).toEqual({
       dealId: 'fakeDealId',
       stage: 'opportunities',
     });
@@ -176,12 +184,14 @@ describe('pipedrive', () => {
       isSubscribed: false,
       hasSynchronizedBankAccount: true,
     });
-    api.getPersonIdBySiren.mockResolvedValue('fakePersonId');
-    api.getOpenDealIdForPerson.mockResolvedValue('fakeDealId');
+    mockAPI.getPersonIdBySiren.mockResolvedValue('fakePersonId');
+    mockAPI.getOpenDealIdForPerson.mockResolvedValue('fakeDealId');
 
     await updateUserInCRM({
       userId: '#fakeUserId',
       siren: '123456789',
+      api: mockAPI,
+      db: mockDB,
     });
 
     expect(mockDB.getUserById.mock.calls.length).toBe(1);
@@ -189,9 +199,9 @@ describe('pipedrive', () => {
     expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
       userId: '#fakeUserId',
     });
-    expect(api.updatePerson.mock.calls.length).toBe(1);
-    expect(api.updatePerson.mock.calls[0].length).toBe(1);
-    expect(api.updatePerson.mock.calls[0][0]).toEqual({
+    expect(mockAPI.updatePerson.mock.calls.length).toBe(1);
+    expect(mockAPI.updatePerson.mock.calls[0].length).toBe(1);
+    expect(mockAPI.updatePerson.mock.calls[0][0]).toEqual({
       personId: 'fakePersonId',
       data: {
         email: 'john.doe@example.com',
@@ -201,9 +211,9 @@ describe('pipedrive', () => {
         jobLabel: 'nurse',
       },
     });
-    expect(api.updateDealStage.mock.calls.length).toBe(1);
-    expect(api.updateDealStage.mock.calls[0].length).toBe(1);
-    expect(api.updateDealStage.mock.calls[0][0]).toEqual({
+    expect(mockAPI.updateDealStage.mock.calls.length).toBe(1);
+    expect(mockAPI.updateDealStage.mock.calls[0].length).toBe(1);
+    expect(mockAPI.updateDealStage.mock.calls[0][0]).toEqual({
       dealId: 'fakeDealId',
       stage: 'ongoing_trials',
     });

@@ -17,7 +17,7 @@ async function getDB({ url, dbName }) {
       if (!dbUser) {
         return undefined;
       }
-      const bankAccountsCount = await this.countUserBankAccounts({ userId });
+      const bankAccountsCount = await _countUserBankAccounts({ userId, BankAccounts });
       return {
         _id: dbUser._id,
         email: dbUser.emails[0].address,
@@ -28,10 +28,14 @@ async function getDB({ url, dbName }) {
       };
     },
     countUserBankAccounts({ userId }) {
-      return BankAccounts.countDocuments({ id_user: userId });
+      return _countUserBankAccounts({ userId, BankAccounts });
     },
     async close() {
       await client.close();
     },
   };
 };
+
+function _countUserBankAccounts({ userId, BankAccounts }) {
+  return BankAccounts.countDocuments({ id_user: userId });
+}
