@@ -2,6 +2,10 @@ const _ = require('lodash');
 const axios = require('axios');
 const { MongoClient } = require('mongodb');
 
+const {
+  getDB,
+} = require('./db');
+
 module.exports = {
   updateUserInCRM,
 };
@@ -22,23 +26,21 @@ const pipelines = {
 };
 
 const stageIDs = _(pipelines)
-      .flatMap((stages, pipeline) => {
-        return _.map(stages, (stageId, stage) => [
-          stageId, { pipeline, stage },
-        ]);
-      })
-      .fromPairs()
-      .value();
+  .flatMap((stages, pipeline) => {
+    return _.map(stages, (stageId, stage) => [
+      stageId, { pipeline, stage },
+    ]);
+  })
+  .fromPairs()
+  .value();
 
 async function updateUserInCRM({ userId, siren }) {
-  const client = await MongoClient.connect('mongodb://localhost:27017', {
-    useUnifiedTopology: true,
+  const db = await getDB({
+    url: 'mongodb://localhost:27017',
+    dbName: 'test',
   });
-  const db = client.db('test');
-  const BankAccounts = db.collection('bank_accounts');
-  const Users = db.collection('users');
   try {
-    const user = await Users.findOne({ _id: userId });
+    const user = await db.getUserById({ userId });
     if (!user) {
       console.log('No user found');
       return;
@@ -101,7 +103,7 @@ async function updateUserInCRM({ userId, siren }) {
     const {
       pipeline,
     } = _.get(stageIDs, deal.stage_id);
-    const bankAccountsCounts = await BankAccounts.countDocuments({ id_user: userId });
+    const bankAccountsCounts = await db.countUserBankAccounts({ userId });
     const stage = bankAccountsCounts <= 0 ? 'opportunities' : 'ongoing_trials';
 
     await axios({
@@ -112,6 +114,6 @@ async function updateUserInCRM({ userId, siren }) {
       },
     });
   } finally {
-    await client.close();
+    await db.close();
   }
 }
