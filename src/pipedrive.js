@@ -11,24 +11,22 @@ async function updateUserInCRM({
   },
   api: {
     getPersonIdBySiren,
-    updatePerson,
     getOpenDealIdForPerson,
-    updateDealStage,
   },
 }) {
   const user = await getUserById({ userId });
   if (!user) {
     console.log('No user found');
-    return;
+    return undefined;
   }
 
   const personId = await getPersonIdBySiren({ siren });
   if (!personId) {
     console.log('No person found');
-    return;
+    return undefined;
   }
 
-  await updatePerson({
+  const updatePerson = {
     personId,
     data: {
       email: user.email,
@@ -37,22 +35,26 @@ async function updateUserInCRM({
       georgesUserId: userId,
       jobLabel: user.job,
     },
-  });
+  };
 
   if (user.isSubscribed) {
     console.log('User already subscribed');
-    return;
+    return { updatePerson };
   }
 
   const dealId = await getOpenDealIdForPerson({ personId });
   if (!dealId) {
     console.log('No deal found');
-    return;
+    return { updatePerson };
   }
 
   const stage = user.hasSynchronizedBankAccount ? 'ongoing_trials' : 'opportunities';
-  await updateDealStage({
+  const updateDealStage = {
     dealId,
     stage,
-  });
+  };
+  return {
+    updatePerson,
+    updateDealStage,
+  };
 }

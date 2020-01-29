@@ -16,10 +16,15 @@ async function updateUserInCRM({ userId, siren }) {
     dbName: 'test',
   });
   try {
-    await pipedrive.updateUserInCRM({
+    const {
+      updatePerson,
+      updateDealStage,
+    } = await pipedrive.updateUserInCRM({
       userId, siren,
       db, api,
     });
+    await (updatePerson && api.updatePerson(updatePerson));
+    await (updateDealStage && api.updateDealStage(updateDealStage));
   } finally {
     await db.close();
   }
