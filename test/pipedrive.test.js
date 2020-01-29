@@ -1,8 +1,9 @@
 const { updateUserInCRM } = require('../src/pipedrive.js');
 const dbModule = require('../src/db.js');
-const nock = require('nock');
+const api = require('../src/api.js');
 
 jest.mock('../src/db.js');
+jest.mock('../src/api.js');
 
 describe('pipedrive', () => {
   let mockDB;
@@ -16,8 +17,7 @@ describe('pipedrive', () => {
   });
 
   afterEach(() => {
-    nock.cleanAll();
-    nock.enableNetConnect();
+    jest.clearAllMocks();
   });
 
   it('should do nothing when user is not found', async () => {
@@ -36,26 +36,22 @@ describe('pipedrive', () => {
       isSubscribed: false,
       hasSynchronizedBankAccounts: false,
     });
-    const scope = nock('http://api.crm.com/v1')
-      .get('/persons')
-      .query({
-        field: '2d89a2a3c44faab761afe9043da4d40da3538adb',
-        value: '123456789',
-      })
-      .reply(200, {
-        data: [],
-      });
+    api.getPersonIdBySiren.mockResolvedValue(undefined);
 
     await updateUserInCRM({
       userId: '#fakeUserId',
       siren: '123456789',
     });
 
-    scope.done();
     expect(mockDB.getUserById.mock.calls.length).toBe(1);
     expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
     expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
       userId: '#fakeUserId',
+    });
+    expect(api.getPersonIdBySiren.mock.calls.length).toBe(1);
+    expect(api.getPersonIdBySiren.mock.calls[0].length).toBe(1);
+    expect(api.getPersonIdBySiren.mock.calls[0][0]).toEqual({
+      siren: '123456789',
     });
   });
 
@@ -68,18 +64,28 @@ describe('pipedrive', () => {
       isSubscribed: true,
       hasSynchronizedBankAccounts: false,
     });
-    const scope = nock('http://api.crm.com/v1')
-      .get('/persons')
-      .query({
-        field: '2d89a2a3c44faab761afe9043da4d40da3538adb',
-        value: '123456789',
-      })
-      .reply(200, {
-        data: [
-          { id: 'fakePersonId' },
-        ],
-      })
-      .put('/persons/fakePersonId', {
+    api.getPersonIdBySiren.mockResolvedValue('fakePersonId');
+
+    await updateUserInCRM({
+      userId: '#fakeUserId',
+      siren: '123456789',
+    });
+
+    expect(mockDB.getUserById.mock.calls.length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
+      userId: '#fakeUserId',
+    });
+    expect(api.getPersonIdBySiren.mock.calls.length).toBe(1);
+    expect(api.getPersonIdBySiren.mock.calls[0].length).toBe(1);
+    expect(api.getPersonIdBySiren.mock.calls[0][0]).toEqual({
+      siren: '123456789',
+    });
+    expect(api.updatePerson.mock.calls.length).toBe(1);
+    expect(api.updatePerson.mock.calls[0].length).toBe(1);
+    expect(api.updatePerson.mock.calls[0][0]).toEqual({
+      personId: 'fakePersonId',
+      data: {
         email: 'john.doe@example.com',
         phone: '0102030405',
         // SIREN
@@ -88,19 +94,7 @@ describe('pipedrive', () => {
         '8254d58243c8cf10f258ca054b7bc08582407491': '#fakeUserId',
         // JobLabel
         '1f2fa3f0c10305458b57ab0cdfeda1915802cfe2': 'nurse',
-      })
-      .reply(200);
-
-    await updateUserInCRM({
-      userId: '#fakeUserId',
-      siren: '123456789',
-    });
-
-    scope.done();
-    expect(mockDB.getUserById.mock.calls.length).toBe(1);
-    expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
-    expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
-      userId: '#fakeUserId',
+      },
     });
   });
 
@@ -113,46 +107,23 @@ describe('pipedrive', () => {
       isSubscribed: false,
       hasSynchronizedBankAccounts: false,
     });
-    const scope = nock('http://api.crm.com/v1')
-      .get('/persons')
-      .query({
-        field: '2d89a2a3c44faab761afe9043da4d40da3538adb',
-        value: '123456789',
-      })
-      .reply(200, {
-        data: [
-          { id: 'fakePersonId' },
-        ],
-      })
-      .put('/persons/fakePersonId', {
-        email: 'john.doe@example.com',
-        phone: '0102030405',
-        // SIREN
-        '2d89a2a3c44faab761afe9043da4d40da3538adb': '123456789',
-        // GeorgesUserID
-        '8254d58243c8cf10f258ca054b7bc08582407491': '#fakeUserId',
-        // JobLabel
-        '1f2fa3f0c10305458b57ab0cdfeda1915802cfe2': 'nurse',
-      })
-      .reply(200)
-      .get('/persons/fakePersonId/deals')
-      .query({
-        status: 'open',
-      })
-      .reply(200, {
-        data: [],
-      });
+    api.getPersonIdBySiren.mockResolvedValue('fakePersonId');
+    api.getOpenDealIdForPerson.mockResolvedValue(undefined);
 
     await updateUserInCRM({
       userId: '#fakeUserId',
       siren: '123456789',
     });
 
-    scope.done();
     expect(mockDB.getUserById.mock.calls.length).toBe(1);
     expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
     expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
       userId: '#fakeUserId',
+    });
+    expect(api.getOpenDealIdForPerson.mock.calls.length).toBe(1);
+    expect(api.getOpenDealIdForPerson.mock.calls[0].length).toBe(1);
+    expect(api.getOpenDealIdForPerson.mock.calls[0][0]).toEqual({
+      personId: 'fakePersonId',
     });
   });
 
@@ -166,18 +137,24 @@ describe('pipedrive', () => {
       hasSynchronizedBankAccounts: false,
     });
     mockDB.countUserBankAccounts.mockResolvedValue(0);
-    const scope = nock('http://api.crm.com/v1')
-      .get('/persons')
-      .query({
-        field: '2d89a2a3c44faab761afe9043da4d40da3538adb',
-        value: '123456789',
-      })
-      .reply(200, {
-        data: [
-          { id: 'fakePersonId' },
-        ],
-      })
-      .put('/persons/fakePersonId', {
+    api.getPersonIdBySiren.mockResolvedValue('fakePersonId');
+    api.getOpenDealIdForPerson.mockResolvedValue('fakeDealId');
+
+    await updateUserInCRM({
+      userId: '#fakeUserId',
+      siren: '123456789',
+    });
+
+    expect(mockDB.getUserById.mock.calls.length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
+      userId: '#fakeUserId',
+    });
+    expect(api.updatePerson.mock.calls.length).toBe(1);
+    expect(api.updatePerson.mock.calls[0].length).toBe(1);
+    expect(api.updatePerson.mock.calls[0][0]).toEqual({
+      personId: 'fakePersonId',
+      data: {
         email: 'john.doe@example.com',
         phone: '0102030405',
         // SIREN
@@ -186,39 +163,13 @@ describe('pipedrive', () => {
         '8254d58243c8cf10f258ca054b7bc08582407491': '#fakeUserId',
         // JobLabel
         '1f2fa3f0c10305458b57ab0cdfeda1915802cfe2': 'nurse',
-      })
-      .reply(200)
-      .get('/persons/fakePersonId/deals')
-      .query({
-        status: 'open',
-      })
-      .reply(200, {
-        data: [
-          { id: 'fakeDealId' },
-        ],
-      })
-      .get('/deals/fakeDealId')
-      .reply(200, {
-        data: {
-          id: 'fakeDealId',
-          stage_id: 18,
-        },
-      })
-      .put('/deals/fakeDealId', {
-        stage_id: 19,
-      })
-      .reply(200);
-
-    await updateUserInCRM({
-      userId: '#fakeUserId',
-      siren: '123456789',
+      },
     });
-
-    scope.done();
-    expect(mockDB.getUserById.mock.calls.length).toBe(1);
-    expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
-    expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
-      userId: '#fakeUserId',
+    expect(api.updateDealStage.mock.calls.length).toBe(1);
+    expect(api.updateDealStage.mock.calls[0].length).toBe(1);
+    expect(api.updateDealStage.mock.calls[0][0]).toEqual({
+      dealId: 'fakeDealId',
+      stage: 'opportunities',
     });
   });
 
@@ -231,18 +182,24 @@ describe('pipedrive', () => {
       isSubscribed: false,
       hasSynchronizedBankAccount: true,
     });
-    const scope = nock('http://api.crm.com/v1')
-      .get('/persons')
-      .query({
-        field: '2d89a2a3c44faab761afe9043da4d40da3538adb',
-        value: '123456789',
-      })
-      .reply(200, {
-        data: [
-          { id: 'fakePersonId' },
-        ],
-      })
-      .put('/persons/fakePersonId', {
+    api.getPersonIdBySiren.mockResolvedValue('fakePersonId');
+    api.getOpenDealIdForPerson.mockResolvedValue('fakeDealId');
+
+    await updateUserInCRM({
+      userId: '#fakeUserId',
+      siren: '123456789',
+    });
+
+    expect(mockDB.getUserById.mock.calls.length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
+    expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
+      userId: '#fakeUserId',
+    });
+    expect(api.updatePerson.mock.calls.length).toBe(1);
+    expect(api.updatePerson.mock.calls[0].length).toBe(1);
+    expect(api.updatePerson.mock.calls[0][0]).toEqual({
+      personId: 'fakePersonId',
+      data: {
         email: 'john.doe@example.com',
         phone: '0102030405',
         // SIREN
@@ -251,39 +208,13 @@ describe('pipedrive', () => {
         '8254d58243c8cf10f258ca054b7bc08582407491': '#fakeUserId',
         // JobLabel
         '1f2fa3f0c10305458b57ab0cdfeda1915802cfe2': 'nurse',
-      })
-      .reply(200)
-      .get('/persons/fakePersonId/deals')
-      .query({
-        status: 'open',
-      })
-      .reply(200, {
-        data: [
-          { id: 'fakeDealId' },
-        ],
-      })
-      .get('/deals/fakeDealId')
-      .reply(200, {
-        data: {
-          id: 'fakeDealId',
-          stage_id: 22,
-        },
-      })
-      .put('/deals/fakeDealId', {
-        stage_id: 24,
-      })
-      .reply(200);
-
-    await updateUserInCRM({
-      userId: '#fakeUserId',
-      siren: '123456789',
+      },
     });
-
-    scope.done();
-    expect(mockDB.getUserById.mock.calls.length).toBe(1);
-    expect(mockDB.getUserById.mock.calls[0].length).toBe(1);
-    expect(mockDB.getUserById.mock.calls[0][0]).toEqual({
-      userId: '#fakeUserId',
+    expect(api.updateDealStage.mock.calls.length).toBe(1);
+    expect(api.updateDealStage.mock.calls[0].length).toBe(1);
+    expect(api.updateDealStage.mock.calls[0][0]).toEqual({
+      dealId: 'fakeDealId',
+      stage: 'ongoing_trials',
     });
   });
 });
