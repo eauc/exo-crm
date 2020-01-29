@@ -2,6 +2,7 @@ const { MongoClient } = require('mongodb');
 
 module.exports = {
   getDB,
+  dbUserToPipedriveUser,
 };
 
 async function getDB({ url, dbName }) {
@@ -14,18 +15,8 @@ async function getDB({ url, dbName }) {
   return {
     async getUserById({ userId }) {
       const dbUser = await Users.findOne({ _id: userId });
-      if (!dbUser) {
-        return undefined;
-      }
       const bankAccountsCount = await _countUserBankAccounts({ userId, BankAccounts });
-      return {
-        _id: dbUser._id,
-        email: dbUser.emails[0].address,
-        phone: dbUser.profile.phone,
-        job: dbUser.profile.job,
-        isSubscribed: Boolean(dbUser.stripe.plan),
-        hasSynchronizedBankAccount: bankAccountsCount > 0,
-      };
+      return dbUserToPipedriveUser({ dbUser, bankAccountsCount });
     },
     countUserBankAccounts({ userId }) {
       return _countUserBankAccounts({ userId, BankAccounts });
@@ -38,4 +29,18 @@ async function getDB({ url, dbName }) {
 
 function _countUserBankAccounts({ userId, BankAccounts }) {
   return BankAccounts.countDocuments({ id_user: userId });
+}
+
+function dbUserToPipedriveUser({ dbUser, bankAccountsCount }) {
+  if (!dbUser) {
+    return undefined;
+  }
+  return {
+    _id: dbUser._id,
+    email: dbUser.emails[0].address,
+    phone: dbUser.profile.phone,
+    job: dbUser.profile.job,
+    isSubscribed: Boolean(dbUser.stripe.plan),
+    hasSynchronizedBankAccount: bankAccountsCount > 0,
+  };
 }
