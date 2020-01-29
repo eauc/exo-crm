@@ -54,6 +54,9 @@ async function updatePerson({ personId, data }) {
 }
 
 async function getOpenDealIdForPerson({ personId }) {
+  if (!personId) {
+    return undefined;
+  }
   const response = await axios(getOpenDealIdForPersonQuery({ personId }));
   return getResourceIdResponse(response);
 }

@@ -5,22 +5,16 @@ module.exports = {
 };
 
 async function updateUserInCRM({
-  userId, siren,
-  db: {
-    getUserById,
-  },
-  api: {
-    getPersonIdBySiren,
-    getOpenDealIdForPerson,
-  },
+  user,
+  siren,
+  personId,
+  dealId,
 }) {
-  const user = await getUserById({ userId });
   if (!user) {
     console.log('No user found');
     return undefined;
   }
 
-  const personId = await getPersonIdBySiren({ siren });
   if (!personId) {
     console.log('No person found');
     return undefined;
@@ -32,7 +26,7 @@ async function updateUserInCRM({
       email: user.email,
       phone: user.phone,
       siren,
-      georgesUserId: userId,
+      georgesUserId: user._id,
       jobLabel: user.job,
     },
   };
@@ -42,7 +36,6 @@ async function updateUserInCRM({
     return { updatePerson };
   }
 
-  const dealId = await getOpenDealIdForPerson({ personId });
   if (!dealId) {
     console.log('No deal found');
     return { updatePerson };

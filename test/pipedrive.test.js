@@ -3,12 +3,10 @@ const { updateUserInCRM } = require('../src/pipedrive.js');
 describe('pipedrive', () => {
   it('should do nothing when user is not found', async () => {
     const updates = await updateUserInCRM({
-      userId: '#fakeUserId',
+      user: undefined,
       siren: '123456789',
-      api: {},
-      db: {
-        getUserById: () => undefined,
-      },
+      personId: undefined,
+      dealId: undefined,
     });
 
     expect(updates).toBe(undefined);
@@ -16,21 +14,17 @@ describe('pipedrive', () => {
 
   it('should do nothing when person with SIREN is not found', async () => {
     const updates = await updateUserInCRM({
-      userId: '#fakeUserId',
+      user: {
+        _id: '#fakeUserId',
+        email: 'john.doe@example.com',
+        phone: '0102030405',
+        job: 'nurse',
+        isSubscribed: false,
+        hasSynchronizedBankAccount: false,
+      },
       siren: '123456789',
-      api: {
-        getPersonIdBySiren: () => undefined,
-      },
-      db: {
-        getUserById: ({ userId }) => (userId === '#fakeUserId' && {
-          _id: '#fakeUserId',
-          email: 'john.doe@example.com',
-          phone: '0102030405',
-          job: 'nurse',
-          isSubscribed: false,
-          hasSynchronizedBankAccount: false,
-        }),
-      },
+      personId: undefined,
+      dealId: undefined,
     });
 
     expect(updates).toBe(undefined);
@@ -41,23 +35,17 @@ describe('pipedrive', () => {
       updatePerson,
       updateDealStage,
     } = await updateUserInCRM({
-      userId: '#fakeUserId',
+      user: {
+        _id: '#fakeUserId',
+        email: 'john.doe@example.com',
+        phone: '0102030405',
+        job: 'nurse',
+        isSubscribed: true,
+        hasSynchronizedBankAccount: false,
+      },
       siren: '123456789',
-      api: {
-        getPersonIdBySiren: ({ siren }) => (
-          siren === '123456789' && 'fakePersonId'
-        ),
-      },
-      db: {
-        getUserById: ({ userId }) => (userId === '#fakeUserId' && {
-          _id: '#fakeUserId',
-          email: 'john.doe@example.com',
-          phone: '0102030405',
-          job: 'nurse',
-          isSubscribed: true,
-          hasSynchronizedBankAccount: false,
-        }),
-      },
+      personId: 'fakePersonId',
+      dealId: undefined,
     });
 
     expect(updatePerson).toEqual({
@@ -78,24 +66,17 @@ describe('pipedrive', () => {
       updatePerson,
       updateDealStage,
     } = await updateUserInCRM({
-      userId: '#fakeUserId',
+      user: {
+        _id: '#fakeUserId',
+        email: 'john.doe@example.com',
+        phone: '0102030405',
+        job: 'nurse',
+        isSubscribed: false,
+        hasSynchronizedBankAccount: false,
+      },
       siren: '123456789',
-      api: {
-        getPersonIdBySiren: ({ siren }) => (
-          siren === '123456789' && 'fakePersonId'
-        ),
-        getOpenDealIdForPerson: () => undefined,
-      },
-      db: {
-        getUserById: ({ userId }) => (userId === '#fakeUserId' && {
-          _id: '#fakeUserId',
-          email: 'john.doe@example.com',
-          phone: '0102030405',
-          job: 'nurse',
-          isSubscribed: false,
-          hasSynchronizedBankAccount: false,
-        }),
-      },
+      personId: 'fakePersonId',
+      dealId: undefined,
     });
 
     expect(updateDealStage).toBe(undefined);
@@ -106,26 +87,17 @@ describe('pipedrive', () => {
       updatePerson,
       updateDealStage,
     } = await updateUserInCRM({
-      userId: '#fakeUserId',
+      user: {
+        _id: '#fakeUserId',
+        email: 'john.doe@example.com',
+        phone: '0102030405',
+        job: 'nurse',
+        isSubscribed: false,
+        hasSynchronizedBankAccount: false,
+      },
       siren: '123456789',
-      api: {
-        getPersonIdBySiren: ({ siren }) => (
-          siren === '123456789' && 'fakePersonId'
-        ),
-        getOpenDealIdForPerson: ({ personId }) => (
-          personId === 'fakePersonId' && 'fakeDealId'
-        ),
-      },
-      db: {
-        getUserById: ({ userId }) => (userId === '#fakeUserId' && {
-          _id: '#fakeUserId',
-          email: 'john.doe@example.com',
-          phone: '0102030405',
-          job: 'nurse',
-          isSubscribed: false,
-          hasSynchronizedBankAccount: false,
-        }),
-      },
+      personId: 'fakePersonId',
+      dealId: 'fakeDealId',
     });
 
     expect(updatePerson).toEqual({
@@ -149,26 +121,17 @@ describe('pipedrive', () => {
       updatePerson,
       updateDealStage,
     } = await updateUserInCRM({
-      userId: '#fakeUserId',
+      user: {
+        _id: '#fakeUserId',
+        email: 'john.doe@example.com',
+        phone: '0102030405',
+        job: 'nurse',
+        isSubscribed: false,
+        hasSynchronizedBankAccount: true,
+      },
       siren: '123456789',
-      api: {
-        getPersonIdBySiren: ({ siren }) => (
-          siren === '123456789' && 'fakePersonId'
-        ),
-        getOpenDealIdForPerson: ({ personId }) => (
-          personId === 'fakePersonId' && 'fakeDealId'
-        ),
-      },
-      db: {
-        getUserById: ({ userId }) => (userId === '#fakeUserId' && {
-          _id: '#fakeUserId',
-          email: 'john.doe@example.com',
-          phone: '0102030405',
-          job: 'nurse',
-          isSubscribed: false,
-          hasSynchronizedBankAccount: true,
-        }),
-      },
+      personId: 'fakePersonId',
+      dealId: 'fakeDealId',
     });
 
     expect(updatePerson).toEqual({
