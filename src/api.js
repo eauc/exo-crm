@@ -6,6 +6,12 @@ module.exports = {
   updatePerson,
   getOpenDealIdForPerson,
   updateDealStage,
+  // transformers,
+  getResourceIdResponse,
+  getPersonIdBySirenQuery,
+  updatePersonQuery,
+  getOpenDealIdForPersonQuery,
+  updateDealStageQuery,
 };
 
 const pipelines = {
@@ -39,7 +45,26 @@ const personFields = {
 };
 
 async function getPersonIdBySiren({ siren }) {
-  const { data: { data: personIds } } = await axios({
+  const response = await axios(getPersonIdBySirenQuery({ siren }));
+  return getResourceIdResponse(response);
+}
+
+async function updatePerson({ personId, data }) {
+  await axios(updatePersonQuery({ personId, data }));
+}
+
+async function getOpenDealIdForPerson({ personId }) {
+  const response = await axios(getOpenDealIdForPersonQuery({ personId }));
+  return getResourceIdResponse(response);
+}
+
+async function updateDealStage({ dealId, stage }) {
+  const deal = getDealResponse(await axios(getDealQuery({ dealId })));
+  await axios(updateDealStageQuery({ deal, stage }));
+}
+
+function getPersonIdBySirenQuery({ siren }) {
+  return {
     method: 'GET',
     url: 'http://api.crm.com/v1/persons',
     params: {
@@ -47,58 +72,75 @@ async function getPersonIdBySiren({ siren }) {
       field: '2d89a2a3c44faab761afe9043da4d40da3538adb',
       value: siren,
     },
-  });
+  };
+}
 
-  if (_.isEmpty(personIds)) {
+function getResourceIdResponse({ data: { data: resourceIds } }) {
+  if (_.isEmpty(resourceIds)) {
     return undefined;
   }
 
-  const { id: personId } = _.first(personIds);
-  return personId;
+  const { id: resourceId } = _.first(resourceIds);
+  return resourceId;
 }
 
-async function updatePerson({ personId, data }) {
-  const apiPersonData = _.mapKeys(data, (value, key) => {
-    return _.get(personFields, key, key);
-  });
-  await axios({
+function updatePersonQuery({ personId, data }) {
+  const apiPersonData = pipedrivePersonToApiPerson({ person: data });
+  return {
     method: 'PUT',
     url: `http://api.crm.com/v1/persons/${personId}`,
     data: apiPersonData,
+  };
+};
+
+function pipedrivePersonToApiPerson({ person }) {
+  return _.mapKeys(person, (value, key) => {
+    return _.get(personFields, key, key);
   });
 }
 
-async function getOpenDealIdForPerson({ personId }) {
-    const { data: { data: dealIds } } = await axios({
-      method: 'GET',
-      url: `http://api.crm.com/v1/persons/${personId}/deals`,
-      params: {
-        status: 'open',
-      },
-    });
-    if (_.isEmpty(dealIds)) {
-      return undefined;
-    }
-
-  const { id: dealId } = _.first(dealIds);
-  return dealId;
+function getOpenDealIdForPersonQuery({ personId }) {
+  return {
+    method: 'GET',
+    url: `http://api.crm.com/v1/persons/${personId}/deals`,
+    params: {
+      status: 'open',
+    },
+  };
 }
 
-async function updateDealStage({ dealId, stage }) {
-  const { data: { data: deal } } = await axios({
+function getDealQuery({ dealId }) {
+  return {
     method: 'GET',
     url: `http://api.crm.com/v1/deals/${dealId}`,
-  });
+  };
+}
 
+function getDealResponse({ data: { data: deal } }) {
+  return deal;
+}
+
+function updateDealStageQuery({ deal, stage }) {
   const {
     pipeline,
   } = _.get(stageIDs, deal.stage_id);
 
-  await axios({
+  return {
     method: 'PUT',
-    url: `http://api.crm.com/v1/deals/${dealId}`,
+    url: `http://api.crm.com/v1/deals/${deal.id}`,
     data: {
       stage_id: pipelines[pipeline][stage],
     },
-  });
+  };
+}
+
+function stageIdToPipeline({ stageId }) {
+  const {
+    pipeline,
+  } = _.get(stageIDs, stageId);
+  return pipeline;
+}
+
+function pipelineStageToStageId({ pipeline, stage }) {
+  return pipelines[pipeline][stage];
 }
