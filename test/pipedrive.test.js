@@ -88,12 +88,9 @@ describe('pipedrive', () => {
       data: {
         email: 'john.doe@example.com',
         phone: '0102030405',
-        // SIREN
-        '2d89a2a3c44faab761afe9043da4d40da3538adb': '123456789',
-        // GeorgesUserID
-        '8254d58243c8cf10f258ca054b7bc08582407491': '#fakeUserId',
-        // JobLabel
-        '1f2fa3f0c10305458b57ab0cdfeda1915802cfe2': 'nurse',
+        siren: '123456789',
+        georgesUserId: '#fakeUserId',
+        jobLabel: 'nurse',
       },
     });
   });
@@ -157,12 +154,9 @@ describe('pipedrive', () => {
       data: {
         email: 'john.doe@example.com',
         phone: '0102030405',
-        // SIREN
-        '2d89a2a3c44faab761afe9043da4d40da3538adb': '123456789',
-        // GeorgesUserID
-        '8254d58243c8cf10f258ca054b7bc08582407491': '#fakeUserId',
-        // JobLabel
-        '1f2fa3f0c10305458b57ab0cdfeda1915802cfe2': 'nurse',
+        siren: '123456789',
+        georgesUserId: '#fakeUserId',
+        jobLabel: 'nurse',
       },
     });
     expect(api.updateDealStage.mock.calls.length).toBe(1);
@@ -202,12 +196,9 @@ describe('pipedrive', () => {
       data: {
         email: 'john.doe@example.com',
         phone: '0102030405',
-        // SIREN
-        '2d89a2a3c44faab761afe9043da4d40da3538adb': '123456789',
-        // GeorgesUserID
-        '8254d58243c8cf10f258ca054b7bc08582407491': '#fakeUserId',
-        // JobLabel
-        '1f2fa3f0c10305458b57ab0cdfeda1915802cfe2': 'nurse',
+        siren: '123456789',
+        georgesUserId: '#fakeUserId',
+        jobLabel: 'nurse',
       },
     });
     expect(api.updateDealStage.mock.calls.length).toBe(1);

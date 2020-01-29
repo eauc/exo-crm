@@ -32,6 +32,12 @@ const stageIDs = _(pipelines)
   .fromPairs()
   .value();
 
+const personFields = {
+  siren: '2d89a2a3c44faab761afe9043da4d40da3538adb',
+  georgesUserId: '8254d58243c8cf10f258ca054b7bc08582407491',
+  jobLabel: '1f2fa3f0c10305458b57ab0cdfeda1915802cfe2',
+};
+
 async function getPersonIdBySiren({ siren }) {
   const { data: { data: personIds } } = await axios({
     method: 'GET',
@@ -52,10 +58,13 @@ async function getPersonIdBySiren({ siren }) {
 }
 
 async function updatePerson({ personId, data }) {
+  const apiPersonData = _.mapKeys(data, (value, key) => {
+    return _.get(personFields, key, key);
+  });
   await axios({
     method: 'PUT',
     url: `http://api.crm.com/v1/persons/${personId}`,
-    data: data
+    data: apiPersonData,
   });
 }
 

@@ -38,12 +38,9 @@ async function updateUserInCRM({ userId, siren }) {
       data: {
         email: user.email,
         phone: user.phone,
-        // SIREN
-        '2d89a2a3c44faab761afe9043da4d40da3538adb': siren,
-        // GeorgesUserID
-        '8254d58243c8cf10f258ca054b7bc08582407491': userId,
-        // JobLabel
-        '1f2fa3f0c10305458b57ab0cdfeda1915802cfe2': user.job,
+        siren,
+        georgesUserId: userId,
+        jobLabel: user.job,
       },
     });
 
